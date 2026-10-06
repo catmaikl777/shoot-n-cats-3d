@@ -284,7 +284,14 @@ function initBirds() {
       const model = gltf.scene.clone(true);
       const mixer = new THREE.AnimationMixer(model);
       mixer.clipAction(gltf.animations[0]).play();
-      model.scale.setScalar(1.4);
+      // Нормируем габарит: исходные модели (Parrot/Stork) разного масштаба — не даём им стать гигантами
+      const bb = new THREE.Box3().setFromObject(model);
+      const maxDim = Math.max(
+        bb.max.x - bb.min.x,
+        bb.max.y - bb.min.y,
+        bb.max.z - bb.min.z
+      ) || 1;
+      model.scale.setScalar(clamp(1.4 / maxDim, 0.1, 3));
       G.scene.add(model);
       G.birds.push({
         model, mixer,

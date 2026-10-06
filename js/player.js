@@ -143,8 +143,15 @@ export function buildCat({ fur = 0xff8a3d, belly = 0xfff1dd, eyes = 0x9dff5e } =
     if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; }
   });
 
+  // Модель собрана мордой в +X, игровой forward — +Z: укладываем поворот в шелл,
+  // чтобы нос смотрел в +Z. (Владельцы крутят group.rotation.y отдельно.)
+  g.rotation.y = -Math.PI / 2;
+  const shell = new THREE.Group();
+  shell.name = 'catShell';
+  shell.add(g);
+
   return {
-    group: g,
+    group: shell,
     parts: { body, head, ears, legs, tail, tailSegs, gunMount },
     materials: { furMat, bellyMat, eyeMat, darkMat }
   };
@@ -427,9 +434,9 @@ export class LocalPlayer {
     if (this.buffs.speed) speed *= CONFIG.SPRINT_MULT;
 
     const sin = Math.sin(this.camYaw), cos = Math.cos(this.camYaw);
-    // Вперёд по yaw: (sin, 0, cos)
-    let wishX = sin * mv.y + cos * mv.x;
-    let wishZ = cos * mv.y - sin * mv.x;
+    // Вперёд по yaw: (sin, 0, cos); вправо (экранно): (-cos, 0, sin)
+    let wishX = sin * mv.y - cos * mv.x;
+    let wishZ = cos * mv.y + sin * mv.x;
     const wishLen = Math.hypot(wishX, wishZ);
     if (wishLen > 0.0001) {
       wishX = (wishX / wishLen) * mag * speed;
@@ -531,8 +538,8 @@ export class LocalPlayer {
 
   startDash(mv) {
     const sin = Math.sin(this.camYaw), cos = Math.cos(this.camYaw);
-    let dx = sin * mv.y + cos * mv.x;
-    let dz = cos * mv.y - sin * mv.x;
+    let dx = sin * mv.y - cos * mv.x;
+    let dz = cos * mv.y + sin * mv.x;
     const len = Math.hypot(dx, dz) || 1;
     this.dashDir.set(dx / len, 0, dz / len);
     this.dashT = CONFIG.DASH_TIME;
@@ -613,8 +620,8 @@ export class LocalPlayer {
       Math.cos(pitch) * Math.cos(this.camYaw)
     );
 
-    // Смещение плеча (over-the-shoulder)
-    const right = new THREE.Vector3(Math.cos(this.camYaw), 0, -Math.sin(this.camYaw));
+    // Смещение плеча (over-the-shoulder): экранно-право
+    const right = new THREE.Vector3(-Math.cos(this.camYaw), 0, Math.sin(this.camYaw));
     const shoulder = this.aiming ? 0.55 : 0.85;
     const target = eye.clone()
       .addScaledVector(dir, -this.camDist)
