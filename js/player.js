@@ -588,7 +588,17 @@ export class LocalPlayer {
       { x: p.x, y: p.y, z: p.z },
       { x: 0, y: -1, z: 0 }
     );
-    const hit = this.world.castRay(ray, CONFIG.PLAYER_HEIGHT / 2 + 0.25, true);
+    // Исключаем собственную капсулу: иначе ray всегда попадает в себя и grounded
+    // почти всегда true — прыжок срабатывает в воздухе (мультипрыжок).
+    const hit = this.world.castRay(
+      ray,
+      CONFIG.PLAYER_HEIGHT / 2 + 0.25,
+      true,
+      undefined,
+      undefined,
+      undefined,
+      this.body
+    );
     const vy = this.velocity.y;
     this.grounded = !!hit && vy <= 1.5;
   }
@@ -633,7 +643,7 @@ export class LocalPlayer {
     const dist = toCam.length();
     toCam.normalize();
     const ray = new RAPIER.Ray({ x: eye.x, y: eye.y, z: eye.z }, { x: toCam.x, y: toCam.y, z: toCam.z });
-    const hit = this.world.castRay(ray, dist + 0.3, true);
+    const hit = this.world.castRay(ray, dist + 0.3, true, undefined, undefined, undefined, this.body);
     if (hit) {
       const toi = hit.timeOfImpact ?? hit.toi ?? dist;
       target.copy(eye).addScaledVector(toCam, Math.max(0.8, toi - 0.3));

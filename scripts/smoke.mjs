@@ -208,6 +208,27 @@ check(local.grounded, 'игрок на земле');
 check(local.grounded && local.position.y > -50,
   'не упал сквозь карту (y=' + local.position.y.toFixed(2) + ')');
 
+// Прыжок с земли работает и ведёт к приземлению
+const jumpGround = { ...idle, jump: true };
+step(jumpGround, 1);
+check(!local.grounded && local.body.linvel().y > 1,
+  'прыжок с земли работает (vy=' + local.body.linvel().y.toFixed(2) + ')');
+step(idle, 150);
+check(local.grounded, 'приземлился после прыжка');
+
+// [Регрессия мультипрыжка] В воздухе grounded=false и прыжок игнорируется
+local.setPosition(0, 6, 0);
+local.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+step(idle, 6);
+console.log('[4b] в воздухе y=', local.position.y.toFixed(2), 'grounded=', local.grounded);
+check(local.position.y > 1.5, 'игрок действительно в воздухе (y=' + local.position.y.toFixed(2) + ')');
+check(!local.grounded, 'grounded=false в воздухе (иначе мультипрыжок)');
+const jumpAir = { ...idle, jump: true };
+step(jumpAir, 1);
+const vyAir = local.body.linvel().y;
+check(!local.grounded && vyAir < CONFIG.JUMP_VEL * 0.5,
+  'прыжок в воздухе невозможен (vy=' + vyAir.toFixed(2) + ')');
+
 // Открытая зона (центр карты) — там нет стен на пути движения/пули
 local.setPosition(0, 2, 0);
 step(idle, 60);

@@ -239,8 +239,10 @@ function onAimMove(e) {
   const rec = activePointers.get(e.pointerId);
   if (rec) { rec.x = e.clientX; rec.y = e.clientY; }
 
-  // Pinch при двух пальцах в зоне камеры
-  if (activePointers.size >= 2) {
+  // Pinch — только когда ОБА пальца в зоне камеры. Палец джойстика — не пинч,
+  // иначе одновременное «джойстик + свайп камеры» не работает.
+  const aimCount = [...activePointers.values()].filter((p) => p.zone === 'aim').length;
+  if (aimCount >= 2) {
     updatePinch();
     return;
   }
@@ -260,7 +262,8 @@ function onAimMove(e) {
 function onAimEnd(e) {
   activePointers.delete(e.pointerId);
   if (e.pointerId === aimPointer) aimPointer = null;
-  if (activePointers.size < 2) pinchStartDist = 0;
+  const aimCount = [...activePointers.values()].filter((p) => p.zone === 'aim').length;
+  if (aimCount < 2) pinchStartDist = 0;
 }
 
 function updatePinch() {
