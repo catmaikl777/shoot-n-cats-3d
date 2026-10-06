@@ -9,7 +9,7 @@ import { Emitter } from './utils.js';
 //  ВСТАВЬТЕ СЮДА СВОЙ AppID с дашборда photonengine.com
 //  (Dashboard → Create App → тип RealTime → AppId string)
 // ============================================================
-export const PHOTON_APP_ID = 'b1b9833f-4dbd-4a47-9a0f-caa314cf6c47';
+export const PHOTON_APP_ID = '95ae7e33-c745-49ff-ae39-4d1750249816';
 export const PHOTON_APP_VERSION = '1.0';
 // ============================================================
 
