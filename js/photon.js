@@ -111,7 +111,8 @@ export class PhotonNet extends Emitter {
     const S = window.Photon.LoadBalancing.LoadBalancingClient.State;
 
     c.onStateChange = (state) => {
-      const name = window.Photon.LoadBalancing.LoadBalancingClient.stateName[state] || state;
+      const LBC = window.Photon.LoadBalancing.LoadBalancingClient;
+      const name = (LBC.StateToName ? LBC.StateToName(state) : LBC.stateName[state]) || state;
       console.log(`[Photon] state → ${name}`);
       this.emit('state', name);
 
@@ -124,7 +125,7 @@ export class PhotonNet extends Emitter {
       if (state === S.Joined) {
         this.inRoom = true;
         this._reconnectTries = 0;
-        this._roomName = c.myRoom().getName();
+        this._roomName = c.myRoom().name;
         console.log(`[Photon] вошли в комнату "${this._roomName}"`);
         this.emit('joined', { name: this._roomName, createdByMe: this._lastCreated });
       }
@@ -245,7 +246,7 @@ export class PhotonNet extends Emitter {
     this._roomName = name.slice(0, 24);
     this.pendingMode = mode;
     console.log(`[Photon] вход в комнату "${this._roomName}"`);
-    return this.client.joinRoom(this._roomName, {}, {
+    return this.client.joinRoom(this._roomName, { createIfNotExists: true }, {
       maxPlayers,
       isVisible: true,
       isOpen: true,
@@ -254,15 +255,23 @@ export class PhotonNet extends Emitter {
     });
   }
 
-  /** Случайная комната (быстрая игра) */
+  /** Быстрая игра: случайная комната или мгновенное создание новой */
   joinRandom(mode = 'team') {
     if (!this.client) return false;
     this.pendingMode = mode;
+    const createOpts = {
+      maxPlayers: 8,
+      isVisible: true,
+      isOpen: true,
+      customGameProperties: { mode, map: 'city', bots: 0 },
+      propsListedInLobby: ['mode', 'map']
+    };
+    if (typeof this.client.joinRandomOrCreateRoom === 'function') {
+      console.log('[Photon] быстрая игра (joinRandomOrCreateRoom)');
+      return this.client.joinRandomOrCreateRoom({}, undefined, createOpts);
+    }
     console.log('[Photon] быстрая игра (joinRandomRoom)');
-    const ok = this.client.joinRandomRoom({
-      expectedCustomRoomProperties: undefined // берём любую открытую
-    });
-    return ok;
+    return this.client.joinRandomRoom({});
   }
 
   /** Свойство текущей комнаты */
@@ -297,15 +306,11 @@ export class PhotonNet extends Emitter {
     return this.client.myRoomActorsArray();
   }
 
-  /**
-   * Отправить событие игры.
-   * @param {number} code код из utils.EV
-   * @param {object} data
-   * @param {boolean} reliable true — доставка гарантирована (смерть, выстрел, бонус)
-   */
+  /** Событие игры. WebSocket (TCP) доставляет всё надёжно, флаг опционален. */
   raise(code, data, reliable = false) {
     if (!this.client || !this.inRoom) return false;
-    this.client.raiseEvent(code, data, { reliable: !!reliable });
+    void reliable;
+    this.client.raiseEvent(code, data, {});
     return true;
   }
 
