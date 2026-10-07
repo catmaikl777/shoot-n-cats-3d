@@ -593,7 +593,7 @@ export class UI {
     // Стрелка игрока
     ctx2d.save();
     ctx2d.translate(cx + playerPos.x * scale, cy + playerPos.z * scale);
-    ctx2d.rotate(-yaw);
+    ctx2d.rotate(Math.PI - yaw);
     ctx2d.fillStyle = '#fff';
     ctx2d.beginPath();
     ctx2d.moveTo(0, -6); ctx2d.lineTo(4.5, 5); ctx2d.lineTo(-4.5, 5);

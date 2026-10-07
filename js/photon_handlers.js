@@ -164,13 +164,10 @@ function handleDeath(ctx, content) {
   const killerName = killer ? killer.name : 'Мир';
   const victimName = victim ? victim.name : `Кот_${victimNr}`;
 
-  // Жертва умирает
-  if (victim) {
-    if (victim === local) {
-      if (local.alive) local.die(killerName);
-    } else {
-      victim.die();
-    }
+  // Жертва умирает (только для ремоутов по сетевому событию)
+  // Локальная жертва уже умерла локально (takeDamage→die), событие шлёт сама
+  if (victim && victim !== local) {
+    victim.die();
   }
 
   // Убийца получает заслугу (единообразно на всех клиентах)
@@ -184,7 +181,6 @@ function handleDeath(ctx, content) {
       ui?.hitmarker?.(true);
     }
   }
-  if (victim) victim.deaths = (victim.deaths || 0) + 1;
 
   ui?.killfeed?.(killerName, victimName, headshot);
   ui?.updateScoreboard?.();

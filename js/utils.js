@@ -188,7 +188,7 @@ export const CONFIG = {
   MATCH_TIME: 300,         // 5 минут
   KING_SCORE: 200,
   DELIVERY_TARGET: 5,
-
+  FRAG_LIMIT_TEAM: 50,
   // Карта
   MAP_SIZE: 200
 };

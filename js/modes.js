@@ -342,7 +342,14 @@ export class Modes {
   /** Выстрел-убийство (из photon_handlers) */
   onKill(killer) {
     if (this.mode === 'team') {
-      if (killer?.team) this.score[killer.team] += 1;
+      if (killer?.team) {
+        this.score[killer.team] += 1;
+        if (this.score[killer.team] >= CONFIG.FRAG_LIMIT_TEAM ||
+            this.score.a >= CONFIG.FRAG_LIMIT_TEAM ||
+            this.score.b >= CONFIG.FRAG_LIMIT_TEAM) {
+          this._finish();
+        }
+      }
     }
     this.ui?.setTeamScore?.(this.score.a, this.score.b);
   }
@@ -421,15 +428,19 @@ export class Modes {
 
     console.log(`[Modes] матч окончен. победитель: ${winner}`);
     this.audio?.play(winner === this.local?.team ? 'victory' : 'defeat');
-    this.ui?.showResult?.({
-      winner,
-      myTeam: this.local?.team,
-      mode: MODE_INFO[this.mode].label,
-      score: { ...this.score },
-      goals: { ...this.goalCount },
-      rows: this.rowsFn?.() || [],
-      time: formatTime(CONFIG.MATCH_TIME)
-    });
+    try {
+      this.ui?.showResult?.({
+        winner,
+        myTeam: this.local?.team,
+        mode: MODE_INFO[this.mode].label,
+        score: { ...this.score },
+        goals: { ...this.goalCount },
+        rows: this.rowsFn?.() || [],
+        time: formatTime(CONFIG.MATCH_TIME)
+      });
+    } catch (e) {
+      console.error('showResult err', e);
+    }
   }
 
   hud() {
