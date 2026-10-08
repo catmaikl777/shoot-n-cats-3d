@@ -97,7 +97,6 @@ export function initTouchControls(callbacksIn = {}) {
     aimZone: document.getElementById('aim-zone'),
     joyBase: document.getElementById('joy-base'),
     joyStick: document.getElementById('joy-stick'),
-    btnFire: document.getElementById('btn-fire'),
     btnJump: document.getElementById('btn-jump'),
     btnNade: document.getElementById('btn-grenade'),
     btnDash: document.getElementById('btn-dash'),
@@ -119,11 +118,6 @@ export function initTouchControls(callbacksIn = {}) {
   els.aimZone.addEventListener('pointercancel', onAimEnd, { passive: false });
 
   // --- Кнопки действий ---
-  bindHoldButton(els.btnFire, (down) => {
-    input.fire = down;
-    els.btnFire.classList.toggle('pressed', down);
-    if (down) vibrate(12, opts.vibration);
-  });
   bindTapButton(els.btnJump, () => {
     input.jump = true;
     vibrate(20, opts.vibration);
@@ -228,6 +222,9 @@ function onAimStart(e) {
   if (aimPointer === null) {
     aimPointer = e.pointerId;
     aimLast = { x: e.clientX, y: e.clientY };
+    aimStartPos = { x: e.clientX, y: e.clientY };
+    aimStartTime = performance.now();
+    aimFiredTap = false;
   }
   activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, zone: 'aim' });
   updatePinch();
@@ -253,6 +250,13 @@ function onAimMove(e) {
   aimLast = { x: e.clientX, y: e.clientY };
   input.addLook(dx * 1.0, dy * 1.0);
 
+
+  const ad = Math.hypot(e.clientX - aimStartPos.x, e.clientY - aimStartPos.y);
+  if (!aimFiredTap && performance.now() - aimStartTime < 180 && ad < 18) {
+    aimFiredTap = true;
+    input.fire = true;
+    setTimeout(() => { input.fire = false; }, 40);
+  }
   // Свайп вверх от нижнего края — пауза
   if (e.clientY > window.innerHeight - 26 && dy < -18) {
     callbacks.onPauseSwipe?.();
@@ -261,7 +265,7 @@ function onAimMove(e) {
 
 function onAimEnd(e) {
   activePointers.delete(e.pointerId);
-  if (e.pointerId === aimPointer) aimPointer = null;
+  if (e.pointerId === aimPointer) { aimPointer = null; aimFiredTap = false; }
   const aimCount = [...activePointers.values()].filter((p) => p.zone === 'aim').length;
   if (aimCount < 2) pinchStartDist = 0;
 }
@@ -313,6 +317,9 @@ function bindHoldButton(el, fn) {
 let lastTapTime = 0;
 let lastTapX = 0;
 let lastTapY = 0;
+let aimStartPos = { x: 0, y: 0 };
+let aimStartTime = 0;
+let aimFiredTap = false;
 export function registerDoubleTap(e) {
   const now = performance.now();
   const dist = Math.hypot(e.clientX - lastTapX, e.clientY - lastTapY);

@@ -273,6 +273,9 @@ function initWorld() {
   G.ui.onRespawn(respawnLocal);
   G.ui.onRespawnNow(() => { G.ui.hideDeath(); respawnLocal(); });
   G.ui.onLeave(leaveRoom);
+  G.ui.on('pause', () => { G.paused = true; });
+  G.ui.on('resume', () => { G.paused = false; });
+
 }
 
 function initBirds() {
@@ -646,7 +649,7 @@ function frame(now) {
   if (!G.ready) return;
 
   const gameVisible = document.getElementById('screen-game')?.classList.contains('active');
-  const active = G.playing && G.ui.current === 'screen-game';
+  const active = G.playing && G.ui.current === 'screen-game' && !G.paused;
 
   if (active) {
     // Край нажатия (для выключенного автоогня)
