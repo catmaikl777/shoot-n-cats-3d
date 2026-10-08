@@ -468,20 +468,12 @@ input[type="text"]:focus, select:focus { outline: 2px solid var(--accent-2); }
 #touch-controls { position: absolute; inset: 0; z-index: 30; display: none; }
 #touch-controls.on { display: block; }
 
-.joy-zone {
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 50%;
-  pointer-events: auto;
-  touch-action: none;
-}
-.aim-zone {
-  position: absolute;
-  right: 0; top: 0; bottom: 0;
-  width: 50%;
-  pointer-events: auto;
-  touch-action: none;
-}
+.fire-zone, .move-zone, .look-zone, .actions-zone { position: absolute; pointer-events: auto; touch-action: none; }
+.fire-zone { left: 0; top: 0; width: 50%; height: 50%; }
+.move-zone { left: 0; bottom: 0; width: 50%; height: 50%; }
+.look-zone { right: 0; top: 0; width: 50%; height: 50%; }
+.actions-zone { right: 0; bottom: 0; width: 50%; height: 50%; pointer-events: none; }
+.actions-zone .btn-cluster { pointer-events: auto; }
 /* Джойстик справа — для левшей: зоны меняются местами */
 body.joy-right .joy-zone { left: auto; right: 0; }
 body.joy-right .aim-zone { right: auto; left: 0; }

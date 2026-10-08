@@ -1,6 +1,5 @@
 // ============================================================
-// touchControls.js — виртуальные джойстики, свайп камеры,
-// кнопки действий, pinch-zoom, свайп-пауза, двойной тап-таунт,
+// touchControls.js — виртуальные джойстики, свайп камеры, pinch-zoom, свайп-пауза, двойной тап-таунт,
 // плюс десктопное управление (клавиатура + мышь)
 // ============================================================
 
@@ -93,8 +92,9 @@ export function initTouchControls(callbacksIn = {}) {
 
   els = {
     root: document.getElementById('touch-controls'),
-    joyZone: document.getElementById('joy-zone'),
-    aimZone: document.getElementById('aim-zone'),
+    moveZone: document.getElementById('move-zone') || document.getElementById('joy-zone'),
+    lookZone: document.getElementById('look-zone') || document.getElementById('aim-zone'),
+    fireZone: document.getElementById('fire-zone'),
     joyBase: document.getElementById('joy-base'),
     joyStick: document.getElementById('joy-stick'),
     btnJump: document.getElementById('btn-jump'),
@@ -106,16 +106,18 @@ export function initTouchControls(callbacksIn = {}) {
   };
 
   // --- Джойстик ---
-  els.joyZone.addEventListener('pointerdown', onJoyStart, { passive: false });
-  els.joyZone.addEventListener('pointermove', onJoyMove, { passive: false });
-  els.joyZone.addEventListener('pointerup', onJoyEnd, { passive: false });
-  els.joyZone.addEventListener('pointercancel', onJoyEnd, { passive: false });
+  const mv = els.moveZone || els.joyZone;
+  mv?.addEventListener('pointerdown', onJoyStart, { passive: false });
+  mv?.addEventListener('pointermove', onJoyMove, { passive: false });
+  mv?.addEventListener('pointerup', onJoyEnd, { passive: false });
+  mv?.addEventListener('pointercancel', onJoyEnd, { passive: false });
 
   // --- Камера (свайп) ---
-  els.aimZone.addEventListener('pointerdown', onAimStart, { passive: false });
-  els.aimZone.addEventListener('pointermove', onAimMove, { passive: false });
-  els.aimZone.addEventListener('pointerup', onAimEnd, { passive: false });
-  els.aimZone.addEventListener('pointercancel', onAimEnd, { passive: false });
+  const lk = els.lookZone || els.aimZone;
+  lk?.addEventListener('pointerdown', onAimStart, { passive: false });
+  lk?.addEventListener('pointermove', onAimMove, { passive: false });
+  lk?.addEventListener('pointerup', onAimEnd, { passive: false });
+  lk?.addEventListener('pointercancel', onAimEnd, { passive: false });
 
   // --- Кнопки действий ---
   bindTapButton(els.btnJump, () => {
@@ -126,6 +128,26 @@ export function initTouchControls(callbacksIn = {}) {
     if (down) { input.dash = true; vibrate(25, opts.vibration); }
   });
   bindTapButton(els.btnReload, () => { input.reload = true; });
+
+  // --- Стрельба (левый верх) ---
+  els.fireZone?.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    fireStartPos = { x: e.clientX, y: e.clientY };
+    fireStartTime = performance.now();
+    fireFiredTap = false;
+    try { els.fireZone.setPointerCapture?.(e.pointerId); } catch (_) {}
+  }, { passive: false });
+  els.fireZone?.addEventListener('pointermove', (e) => {
+    e.preventDefault();
+    const ad = Math.hypot(e.clientX - fireStartPos.x, e.clientY - fireStartPos.y);
+    if (!fireFiredTap && performance.now() - fireStartTime < 180 && ad < 18) {
+      fireFiredTap = true;
+      input.fire = true;
+      setTimeout(() => { input.fire = false; }, 40);
+    }
+  }, { passive: false });
+  els.fireZone?.addEventListener('pointerup', () => { fireFiredTap = false; });
+  els.fireZone?.addEventListener('pointercancel', () => { fireFiredTap = false; });
 
   // Граната: удержание копит силу, отпускание бросает
   bindHoldButton(els.btnNade, (down) => {
@@ -176,7 +198,7 @@ function onJoyStart(e) {
   els.joyBase.style.top = `${joyOrigin.y}px`;
   els.joyBase.classList.add('show');
   joyHideTimer = 0;
-  try { els.joyZone.setPointerCapture(e.pointerId); } catch (_) {}
+  try { (els.moveZone||els.joyZone).setPointerCapture(e.pointerId); } catch (_) {}
 }
 
 function onJoyMove(e) {
@@ -228,7 +250,7 @@ function onAimStart(e) {
   }
   activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, zone: 'aim' });
   updatePinch();
-  try { els.aimZone.setPointerCapture(e.pointerId); } catch (_) {}
+  try { (els.lookZone||els.aimZone).setPointerCapture(e.pointerId); } catch (_) {}
 }
 
 function onAimMove(e) {
@@ -320,6 +342,9 @@ let lastTapY = 0;
 let aimStartPos = { x: 0, y: 0 };
 let aimStartTime = 0;
 let aimFiredTap = false;
+let fireStartPos = { x: 0, y: 0 };
+let fireStartTime = 0;
+let fireFiredTap = false;
 export function registerDoubleTap(e) {
   const now = performance.now();
   const dist = Math.hypot(e.clientX - lastTapX, e.clientY - lastTapY);
